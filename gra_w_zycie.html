@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Gra w życie</title>
+<style>
+body{
+    background:#111;
+    color:white;
+    text-align:center;
+    font-family:Arial;
+}
+canvas{
+    background:black;
+    border:1px solid white;
+}
+button{
+    margin:5px;
+    padding:8px 15px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Gra w życie</h2>
+<p>Krok: <span id="stepCounter">0</span></p>
+
+<canvas id="game" width="600" height="600"></canvas><br>
+
+<button onclick="start()">Start</button>
+<button onclick="stop()">Stop</button>
+<button onclick="reset()">Reset</button>
+
+<script>
+
+const size = 100
+const cell = 6
+
+const canvas = document.getElementById("game")
+const ctx = canvas.getContext("2d")
+
+let board = []
+let running = false
+let step = 0
+let lastUpdate = 0
+
+function createBoard(){
+
+    board = []
+
+    for(let y=0;y<size;y++){
+        let row=[]
+        for(let x=0;x<size;x++){
+            row.push(0)
+        }
+        board.push(row)
+    }
+
+    let placed = 0
+
+    while(placed < 5000){
+
+        let x = Math.floor(Math.random()*size)
+        let y = Math.floor(Math.random()*size)
+
+        if(board[y][x]==0){
+            board[y][x]=1
+            placed++
+        }
+    }
+}
+
+function draw(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+
+    for(let y=0;y<size;y++){
+        for(let x=0;x<size;x++){
+
+            if(board[y][x]==1){
+                ctx.fillStyle="lime"
+                ctx.fillRect(x*cell,y*cell,cell,cell)
+            }
+
+        }
+    }
+}
+
+function neighbors(x,y){
+
+    let count=0
+
+    for(let dy=-1;dy<=1;dy++){
+        for(let dx=-1;dx<=1;dx++){
+
+            if(dx==0 && dy==0) continue
+
+            let nx=x+dx
+            let ny=y+dy
+
+            if(nx>=0 && nx<size && ny>=0 && ny<size){
+                count += board[ny][nx]
+            }
+
+        }
+    }
+
+    return count
+}
+
+function addRandomCell(){
+
+    let x = Math.floor(Math.random()*size)
+    let y = Math.floor(Math.random()*size)
+
+    board[y][x] = 1
+}
+
+function update(){
+
+    let newBoard=[]
+
+    for(let y=0;y<size;y++){
+
+        let row=[]
+
+        for(let x=0;x<size;x++){
+
+            let n = neighbors(x,y)
+
+            if(board[y][x]==1){
+                row.push(n==2 || n==3 ? 1 : 0)
+            }else{
+                row.push(n==3 ? 1 : 0)
+            }
+
+        }
+
+        newBoard.push(row)
+    }
+
+    board=newBoard
+
+    step++
+
+    if(step % 9 === 0){
+        addRandomCell()
+    }
+
+    document.getElementById("stepCounter").textContent = step
+}
+
+function loop(time){
+
+    if(running){
+
+        if(time - lastUpdate > 166){
+            update()
+            lastUpdate = time
+        }
+
+    }
+
+    draw()
+
+    requestAnimationFrame(loop)
+}
+
+function start(){
+    running=true
+}
+
+function stop(){
+    running=false
+}
+
+function reset(){
+
+    running=false
+    step=0
+    document.getElementById("stepCounter").textContent=0
+    createBoard()
+}
+
+createBoard()
+loop()
+
+</script>
+
+</body>
+</html>
