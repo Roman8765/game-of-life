@@ -2,318 +2,191 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>index</title>
-
+<title>Gra w życie</title>
 <style>
-
 body{
-background:black;
-color:white;
-font-family:Arial;
-text-align:center;
+    background:#111;
+    color:white;
+    text-align:center;
+    font-family:Arial;
 }
-
-.wrapper{
-display:flex;
-justify-content:center;
-align-items:flex-start;
-gap:30px;
-margin-top:20px;
-}
-
 canvas{
-border:1px solid white;
+    background:black;
+    border:1px solid white;
 }
-
-.stats{
-margin-top:10px;
-font-size:18px;
+button{
+    margin:5px;
+    padding:8px 15px;
 }
-
 </style>
 </head>
 
 <body>
 
-<h2>Game of Life – eksperyment</h2>
+<h2>Gra w życie</h2>
+<p>Krok: <span id="stepCounter">0</span></p>
 
-<div class="stats">
-Kroki: <span id="steps">0</span> |
-Kontakty: <span id="events">0</span> |
-Głód: <span id="hunger">0</span>
-</div>
+<canvas id="game" width="600" height="600"></canvas><br>
 
-<div class="wrapper">
-
-<canvas id="game"></canvas>
-<canvas id="zoom"></canvas>
-
-</div>
+<button onclick="start()">Start</button>
+<button onclick="stop()">Stop</button>
+<button onclick="reset()">Reset</button>
 
 <script>
 
 const size = 100
 const cell = 6
 
-const zoomSize = 5
-const zoomCell = cell*10
-
 const canvas = document.getElementById("game")
-canvas.width = size*cell
-canvas.height = size*cell
 const ctx = canvas.getContext("2d")
 
-const zoomCanvas = document.getElementById("zoom")
-zoomCanvas.width = zoomSize*zoomCell
-zoomCanvas.height = zoomSize*zoomCell
-const zoomCtx = zoomCanvas.getContext("2d")
+let board = []
+let running = false
+let step = 0
+let lastUpdate = 0
 
-let grid = []
-let steps = 0
-let events = 0
-let hunger = 0
+function createBoard(){
 
-let redX = Math.floor(size/2)
-let redY = Math.floor(size/2)
+    board = []
 
-function createGrid(){
+    for(let y=0;y<size;y++){
+        let row=[]
+        for(let x=0;x<size;x++){
+            row.push(0)
+        }
+        board.push(row)
+    }
 
-for(let y=0;y<size;y++){
-grid[y]=[]
-for(let x=0;x<size;x++){
-grid[y][x]=0
-}
-}
+    let placed = 0
 
-let count=0
+    while(placed < 5000){
 
-while(count<5000){
+        let x = Math.floor(Math.random()*size)
+        let y = Math.floor(Math.random()*size)
 
-let x=Math.floor(Math.random()*size)
-let y=Math.floor(Math.random()*size)
-
-if(grid[y][x]==0 && !(x==redX && y==redY)){
-grid[y][x]=1
-count++
-}
-
-}
-
-}
-
-function neighbors(x,y){
-
-let n=0
-
-for(let dy=-1;dy<=1;dy++){
-for(let dx=-1;dx<=1;dx++){
-
-if(dx==0 && dy==0) continue
-
-let nx=x+dx
-let ny=y+dy
-
-if(nx>=0 && nx<size && ny>=0 && ny<size){
-if(grid[ny][nx]==1) n++
-}
-
-}
-}
-
-return n
-
-}
-
-function step(){
-
-let newGrid=[]
-
-for(let y=0;y<size;y++){
-newGrid[y]=[]
-for(let x=0;x<size;x++){
-
-if(x==redX && y==redY){
-newGrid[y][x]=0
-continue
-}
-
-let n=neighbors(x,y)
-
-if(grid[y][x]==1){
-
-if(n==2 || n==3) newGrid[y][x]=1
-else newGrid[y][x]=0
-
-}else{
-
-if(n==3) newGrid[y][x]=1
-else newGrid[y][x]=0
-
-}
-
-}
-}
-
-grid=newGrid
-
+        if(board[y][x]==0){
+            board[y][x]=1
+            placed++
+        }
+    }
 }
 
 function draw(){
 
-ctx.fillStyle="black"
-ctx.fillRect(0,0,canvas.width,canvas.height)
+    ctx.clearRect(0,0,canvas.width,canvas.height)
 
-for(let y=0;y<size;y++){
-for(let x=0;x<size;x++){
+    for(let y=0;y<size;y++){
+        for(let x=0;x<size;x++){
 
-if(grid[y][x]==1){
-ctx.fillStyle="lime"
-ctx.fillRect(x*cell,y*cell,cell,cell)
+            if(board[y][x]==1){
+                ctx.fillStyle="lime"
+                ctx.fillRect(x*cell,y*cell,cell,cell)
+            }
+
+        }
+    }
 }
 
-}
-}
+function neighbors(x,y){
 
-ctx.fillStyle="red"
-ctx.fillRect(redX*cell,redY*cell,cell,cell)
+    let count=0
 
-}
+    for(let dy=-1;dy<=1;dy++){
+        for(let dx=-1;dx<=1;dx++){
 
-function drawZoom(){
+            if(dx==0 && dy==0) continue
 
-zoomCtx.fillStyle="black"
-zoomCtx.fillRect(0,0,zoomCanvas.width,zoomCanvas.height)
+            let nx=x+dx
+            let ny=y+dy
 
-let half=2
+            if(nx>=0 && nx<size && ny>=0 && ny<size){
+                count += board[ny][nx]
+            }
 
-for(let dy=-half;dy<=half;dy++){
-for(let dx=-half;dx<=half;dx++){
+        }
+    }
 
-let gx=redX+dx
-let gy=redY+dy
-
-let zx=(dx+half)*zoomCell
-let zy=(dy+half)*zoomCell
-
-if(gx>=0 && gx<size && gy>=0 && gy<size){
-
-if(grid[gy][gx]==1){
-zoomCtx.fillStyle="lime"
-zoomCtx.fillRect(zx,zy,zoomCell,zoomCell)
-}
-
-}
-
-}
-
-}
-
-zoomCtx.fillStyle="red"
-zoomCtx.fillRect(2*zoomCell,2*zoomCell,zoomCell,zoomCell)
-
-}
-
-function randomMove(){
-
-let dirs=[
-[0,0],
-[1,0],
-[-1,0],
-[0,1],
-[0,-1]
-]
-
-let d=dirs[Math.floor(Math.random()*dirs.length)]
-
-let nx=redX+d[0]
-let ny=redY+d[1]
-
-if(nx>=0 && nx<size && ny>=0 && ny<size){
-
-if(grid[ny][nx]==0){
-redX=nx
-redY=ny
-}
-
-}
-
-}
-
-function checkContact(){
-
-for(let dy=-1;dy<=1;dy++){
-for(let dx=-1;dx<=1;dx++){
-
-let nx=redX+dx
-let ny=redY+dy
-
-if(nx>=0 && nx<size && ny>=0 && ny<size){
-
-if(grid[ny][nx]==1){
-
-let n=neighbors(nx,ny)
-
-if(n==1){
-events++
-hunger=Math.max(0,hunger-1)
-}
-
-}
-
-}
-
-}
-}
-
+    return count
 }
 
 function addRandomCell(){
 
-let x=Math.floor(Math.random()*size)
-let y=Math.floor(Math.random()*size)
+    let x = Math.floor(Math.random()*size)
+    let y = Math.floor(Math.random()*size)
 
-if(!(x==redX && y==redY)){
-grid[y][x]=1
+    board[y][x] = 1
 }
 
+function update(){
+
+    let newBoard=[]
+
+    for(let y=0;y<size;y++){
+
+        let row=[]
+
+        for(let x=0;x<size;x++){
+
+            let n = neighbors(x,y)
+
+            if(board[y][x]==1){
+                row.push(n==2 || n==3 ? 1 : 0)
+            }else{
+                row.push(n==3 ? 1 : 0)
+            }
+
+        }
+
+        newBoard.push(row)
+    }
+
+    board=newBoard
+
+    step++
+
+    if(step % 10 === 0){
+        addRandomCell()
+    }
+
+    document.getElementById("stepCounter").textContent = step
 }
 
-function loop(){
+function loop(time){
 
-steps++
+    if(running){
 
-step()
+        if(time - lastUpdate > 166){
+            update()
+            lastUpdate = time
+        }
 
-randomMove()
+    }
 
-checkContact()
+    draw()
 
-if(steps%9==0){
-addRandomCell()
+    requestAnimationFrame(loop)
 }
 
-if(steps%10==0){
-hunger++
+function start(){
+    running=true
 }
 
-draw()
-drawZoom()
-
-document.getElementById("steps").textContent=steps
-document.getElementById("events").textContent=events
-document.getElementById("hunger").textContent=hunger
-
+function stop(){
+    running=false
 }
 
-createGrid()
+function reset(){
 
-draw()
-drawZoom()
+    running=false
+    step=0
+    document.getElementById("stepCounter").textContent=0
+    createBoard()
+}
 
-setInterval(loop,100)
+createBoard()
+loop()
 
 </script>
 
 </body>
 </html>
-
